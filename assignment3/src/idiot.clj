@@ -20,7 +20,7 @@
                          :else (execute dir ddb dargs)))]
     (cond (= cmd "-r") (handle-r tasks)
           (= cmd "-d") (handle-d tasks)
-          (or (= cmd "help") (= cmd "-h") (= cmd "--help")) (help/main dir db tasks)
+          (or (= cmd "help") (= cmd "-h") (= cmd "--help")) (help/main tasks)
           (and (= cmd "init") (< (count tasks) 2)) (init/main dir db tasks)
           (and (= cmd "hash-object") (< (count tasks) 3)) (hash_object/main dir db tasks)
           (and (= cmd "cat-file") (< (count tasks) 3)) (cat_file/main dir db tasks)
