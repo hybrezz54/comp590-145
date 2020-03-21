@@ -46,6 +46,16 @@
          (map char)
          (apply str))))
 
+(defn sha-bytes [bytes]
+  (.digest (MessageDigest/getInstance "sha1") bytes))
+
+(defn to-hex-string
+  "Convert the given byte array into a hex string, 2 characters per byte."
+  [bytes]
+  (letfn [(to-hex [byte]
+            (format "%02x" (bit-and 0xff byte)))]
+    (->> bytes (map to-hex) (apply str))))
+
 ;************** IMPLEMENTED FUNCTIONS ********************
 
 (defn help
@@ -54,10 +64,12 @@
   (let [flag (first n)]
     (try
       (if (and (not= flag nil) (not= flag "-h") (not= flag "--help") (not= flag "help")
-               (not= flag "init") (not= flag "hash-object") (not= flag "cat-file"))
+               (not= flag "init") (not= flag "hash-object") (not= flag "cat-file")
+               (not= flag "write-wtree"))
         (throw (Exception.)) ())
 
-      (if (or (= flag "help") (= flag "init") (= flag "hash-object") (= flag "cat-file"))
+      (if (or (= flag "help") (= flag "init") (= flag "hash-object") (= flag "cat-file")
+              (= flag "write-wtree") (= flag "commit-tree"))
         ((load-string (str "idiot/" flag)) ["-h"])
         (do (if (or (= flag "-h") (= flag "--help"))
               (do (println "idiot help: print help for a command")
@@ -69,14 +81,20 @@
                   (println))
               (do (println "idiot: the other stupid content tracker")
                   (println)
-                  (println "Usage: idiot <command> [<args>]")
+                  (println "Usage: idiot [<top-args>] <command> [<args>]")
+                  (println)
+                  (println "Top-level arguments:")
+                  (println "   -r <dir>   run from the given directory instead of the current one")
+                  (println "   -d <dir>   store the database in <dir> (default: .idiot)")
                   (println)))
 
             (println "Commands:")
             (println "   help")
             (println "   init")
             (println "   hash-object [-w] <file>")
-            (println "   cat-file -p <address>")))
+            (println "   cat-file {-p|-t} <address>")
+            (println "   write-wtree")
+            (println "   commit-tree <tree> -m \"<message>\" [(-p <parent>)...]")))
       (catch Exception e
         e (println "Error: invalid command")))))
 
@@ -137,23 +155,25 @@
 
       (catch Exception e
         e (println "Error: you must specify a file.")))))
+
 (defn cat-file
   "print information about an object"
   [n]
   (let [flag (first n)
         addr (last n)]
     (try
-      (if (and (not= flag "-h") (not= flag "--help") (not= flag "-p") (= (first flag) "-"))
+      (if (and (not= flag "-h") (not= flag "--help") (not= flag "-p") (not= flag "-t") (= (first flag) "-"))
         (throw (Exception.)) ())
 
       (cond (or (= flag "-h") (= flag "--help"))
             (do (println "idiot cat-file: print information about an object")
                 (println)
-                (println "Usage: idiot cat-file -p <address>")
+                (println "Usage: idiot cat-file {-p|-t} <address>")
                 (println)
                 (println "Arguments:")
                 (println "   -h          print this message")
                 (println "   -p          pretty-print contents based on object type")
+                (println "   -t          print the type of the given object")
                 (println "   <address>   the SHA1-based address of the object"))
             (not (.exists (io/file ".git"))) (println "Error: could not find database. (Did you run `idiot init`?)")
             (not (= flag "-p")) (println "Error: the -p switch is required")
@@ -169,10 +189,54 @@
       (catch Exception e
         e (println "Error: you must specify an address")))))
 
+(defn write-wtree
+  "write the working tree to the database"
+  [n]
+  (let [flag (first n)]
+    (try
+      (if (and (not= flag nil) (not= flag "-h") (not= flag "--help"))
+        (throw (Exception.)) ())
+
+      (cond (or (= flag "-h") (= flag "--help"))
+            (do (println "idiot write-wtree: write the working tree to the database")
+                (println)
+                (println "Usage: idiot write-wtree")
+                (println)
+                (println "Arguments:")
+                (println "   -h       print this message"))
+            (not (.exists (io/file ".git"))) (println "Error: could not find database. (Did you run `idiot init`?)")
+            :else (println "Do something"))
+
+      (catch Exception e
+        e (println "Error: write-wtree accepts no arguments")))))
+
+(defn commit-tree
+  "write a commit object based on the given tree"
+  [n]
+  (let [flag (first n)]
+    (try
+      (if (and (not= flag nil) (not= flag "-h") (not= flag "--help"))
+        (throw (Exception.)) ())
+
+      (cond (or (= flag "-h") (= flag "--help"))
+            (do (println "idiot commit-tree: write a commit object based on the given tree")
+                (println)
+                (println "Usage: idiot commit-tree <tree> -m \"message\" [(-p parent)...]")
+                (println)
+                (println "Arguments:")
+                (println "   -h       print this message"))
+            (not (.exists (io/file ".git"))) (println "Error: could not find database. (Did you run `idiot init`?)")
+            :else (println "Do something"))
+
+      (catch Exception e
+        e (println "Error: commit-tree accepts arguments")))))
+
 (defn -main [& args]
   (cond (= (count args) 0) (help nil)
         (and (or (= (first args) "help") (= (first args) "-h") (= (first args) "--help"))) (help (rest args))
         (and (= (first args) "init") (< (count (rest args)) 2)) (init (rest args))
         (and (= (first args) "hash-object") (< (count (rest args)) 3)) (hash-object (rest args))
         (and (= (first args) "cat-file") (< (count (rest args)) 3)) (cat-file (rest args))
+        (and (= (first args) "write-wtree") (< (count (rest args)) 2)) (write-wtree (rest args))
+        (and (= (first args) "commit-tree") (< (count (rest args)) 3)) (commit-tree (rest args))
         :else (println "Error: invalid command")))
