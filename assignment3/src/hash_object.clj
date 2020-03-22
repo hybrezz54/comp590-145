@@ -23,6 +23,7 @@
                 (println "   -w       write the file to database as a blob object")
                 (println "   <file>   the file"))
             (not (.exists (io/file db-path))) (println "Error: could not find database. (Did you run `idiot init`?)")
+            (or (nil? flag) (and (=  flag  "-w") (nil? (second n)))) (throw (Exception.))
             (and (= flag "-w") (= flag file)) (throw (Exception.))
             (.exists (io/file file)) (let [header-plus-blob (str "blob " (count (slurp file)) "\000" (slurp file))
                                            address (utils/sha1-sum header-plus-blob)

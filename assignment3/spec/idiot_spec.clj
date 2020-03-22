@@ -117,7 +117,7 @@
 
 (describe "The init subprogram"
           (with tmp-file "a-temp-file")
-          (after (rm-rf (io/file ".git") (io/file @tmp-file)))
+          (after (rm-rf (io/file ".idiot") (io/file @tmp-file)))
 
           (it "prints usage given -h argument"
               (should=* init-usage-str (run "init -h")))
@@ -130,25 +130,25 @@
 
           (context "called with no args"
             (it "notifies user of new directory"
-                (should=* "Initialized empty Idiot repository in .git directory\n"
+                (should=* "Initialized empty Idiot repository in .idiot directory\n"
                           (run "init")))
 
-            (it "creates a .git directory"
+            (it "creates a .idiot directory"
                 (run "init")
-                (should (.isDirectory (io/file ".git"))))
+                (should (.isDirectory (io/file ".idiot"))))
 
-            (it "creates a .git/objects directory"
+            (it "creates a .idiot/objects directory"
                 (run "init")
-                (should (.isDirectory (io/file ".git/objects"))))
+                (should (.isDirectory (io/file ".idiot/objects"))))
 
-            (it "prints an error message if .git directory already exists"
-                (.mkdir (io/file ".git"))
-                (should=* "Error: .git directory already exists\n"
+            (it "prints an error message if .idiot directory already exists"
+                (.mkdir (io/file ".idiot"))
+                (should=* "Error: .idiot directory already exists\n"
                           (run "init")))))
 
 (describe "The hash-object subprogram"
           (with tmp-file "a-temp-file")
-          (after (rm-rf (io/file ".git") (io/file @tmp-file)))
+          (after (rm-rf (io/file ".idiot") (io/file @tmp-file)))
 
           (it "prints usage given -h argument"
               (should=* hash-object-usage-str (run "hash-object -h")))
@@ -184,18 +184,18 @@
               (with data "something\n")
               (with header+blob (data->blob @data))
               (with address (sha1-sum @header+blob))
-              (with dir (str ".git/objects/" (subs @address 0 2)))
+              (with dir (str ".idiot/objects/" (subs @address 0 2)))
               (with full-path (str @dir "/" (subs @address 2)))
               (before (spit @tmp-file @data))
 
               (it "prints the correct address"
                   (should=* (str @address "\n") (run (str "hash-object -w " @tmp-file))))
 
-              (it "creates a .git/objects subdirectory from the address"
+              (it "creates a .idiot/objects subdirectory from the address"
                   (run (str "hash-object -w " @tmp-file))
                   (should (.isDirectory (io/file @dir))))
 
-              (it "creates a file in the .git/objects/ dir from the address"
+              (it "creates a file in the .idiot/objects/ dir from the address"
                   (run (str "hash-object -w " @tmp-file))
                   (should (.isFile (io/file @full-path))))
 
@@ -206,7 +206,7 @@
 
 (describe "The cat-file subprogram"
           (with tmp-file "a-temp-file")
-          (after (rm-rf (io/file ".git") (io/file @tmp-file)))
+          (after (rm-rf (io/file ".idiot") (io/file @tmp-file)))
 
           (it "prints usage given -h argument"
               (should=* cat-file-usage-str (run "cat-file -h")))
