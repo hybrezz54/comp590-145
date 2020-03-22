@@ -15,7 +15,10 @@
                 (println "Usage: idiot commit-tree <tree> -m \"message\" [(-p parent)...]")
                 (println)
                 (println "Arguments:")
-                (println "   -h       print this message"))
+                (println "   -h               print this message")
+                (println "   <tree>           the address of the tree object to commit")
+                (println "   -m \"<message>\"   the commit message")
+                (println "   -p <parent>      the address of a parent commit"))
             (not (.exists (io/file ".git"))) (println "Error: could not find database. (Did you run `idiot init`?)")
             :else (println "Do something"))
 
