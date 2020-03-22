@@ -23,8 +23,9 @@
                 (println "   -t          print the type of the given object")
                 (println "   <address>   the SHA1-based address of the object"))
             (not (.exists (io/file db-path))) (println "Error: could not find database. (Did you run `idiot init`?)")
-            (not (= flag "-p")) (println "Error: the -p switch is required")
-            (and (= flag "-p") (= flag addr)) (throw (Exception.))
+            (not (or (= flag "-p") (= flag "-t"))) (println "Error: the -p or -t switch is required")
+            (and (or (= flag "-p") (= flag "-t")) (= flag addr)) (throw (Exception.))
+            (= flag "-t") (println (str "Find blob type of " addr))
             :else (let [blob-dir (subs addr 0 2)
                         blob-file (subs addr 2)]
                     (if (.exists (io/file (str db-path "/objects/" blob-dir "/" blob-file)))
