@@ -6,7 +6,8 @@
   "print information about an object"
   [dir db n]
   (let [flag (first n)
-        addr (last n)]
+        addr (last n)
+        db-path (str dir "/" db)]
     (try
       (if (and (not= flag "-h") (not= flag "--help") (not= flag "-p") (not= flag "-t") (= (first flag) "-"))
         (throw (Exception.)) ())
@@ -21,13 +22,13 @@
                 (println "   -p          pretty-print contents based on object type")
                 (println "   -t          print the type of the given object")
                 (println "   <address>   the SHA1-based address of the object"))
-            (not (.exists (io/file ".git"))) (println "Error: could not find database. (Did you run `idiot init`?)")
+            (not (.exists (io/file db-path))) (println "Error: could not find database. (Did you run `idiot init`?)")
             (not (= flag "-p")) (println "Error: the -p switch is required")
             (and (= flag "-p") (= flag addr)) (throw (Exception.))
-            :else (let [dir (subs addr 0 2)
-                        name (subs addr 2)]
-                    (if (.exists (io/file (str ".git/objects/" dir "/" name)))
-                      (let [blob (with-open [input (-> (str ".git/objects/" dir "/" name) io/file io/input-stream)] (utils/unzip input))
+            :else (let [blob-dir (subs addr 0 2)
+                        blob-file (subs addr 2)]
+                    (if (.exists (io/file (str db-path "/objects/" blob-dir "/" blob-file)))
+                      (let [blob (with-open [input (-> (str db-path "/objects/" blob-dir "/" blob-file) io/file io/input-stream)] (utils/unzip input))
                             blob-start (.indexOf blob "\000")]
                         (print (subs blob (+ blob-start 1))))
                       (println "Error: that address doesn't exist"))))

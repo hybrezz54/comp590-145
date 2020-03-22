@@ -1,10 +1,12 @@
 (ns write_wtree
-  (:require [clojure.java.io :as io]))
+  (:require [clojure.java.io :as io])
+  (:require [utils]))
 
 (defn main
   "write the working tree to the database"
   [dir db n]
-  (let [flag (first n)]
+  (let [flag (first n)
+        db-path (str dir "/" db)]
     (try
       (if (and (not= flag nil) (not= flag "-h") (not= flag "--help"))
         (throw (Exception.)) ())
@@ -16,7 +18,7 @@
                 (println)
                 (println "Arguments:")
                 (println "   -h       print this message"))
-            (not (.exists (io/file ".git"))) (println "Error: could not find database. (Did you run `idiot init`?)")
+            (not (.exists (io/file db-path))) (println "Error: could not find database. (Did you run `idiot init`?)")
             :else (println "Do something"))
 
       (catch Exception e

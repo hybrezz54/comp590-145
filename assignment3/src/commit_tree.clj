@@ -4,7 +4,8 @@
 (defn main
   "write a commit object based on the given tree"
   [dir db n]
-  (let [flag (first n)]
+  (let [flag (first n)
+        db-path (str dir "/" db)]
     (try
       (if (and (not= flag nil) (not= flag "-h") (not= flag "--help"))
         (throw (Exception.)) ())
@@ -19,7 +20,7 @@
                 (println "   <tree>           the address of the tree object to commit")
                 (println "   -m \"<message>\"   the commit message")
                 (println "   -p <parent>      the address of a parent commit"))
-            (not (.exists (io/file ".git"))) (println "Error: could not find database. (Did you run `idiot init`?)")
+            (not (.exists (io/file db-path))) (println "Error: could not find database. (Did you run `idiot init`?)")
             :else (println "Do something"))
 
       (catch Exception e

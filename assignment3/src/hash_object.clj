@@ -27,11 +27,11 @@
             (.exists (io/file file)) (let [header-plus-blob (str "blob " (count (slurp file)) "\000" (slurp file))
                                            address (utils/sha1-sum header-plus-blob)
                                            blob-dir (subs address 0 2)
-                                           name (subs address 2)]
+                                           blob-file (subs address 2)]
                                        (cond (= flag "-w")
                                              (do (.mkdirs (io/as-file (str db-path "/objects/" blob-dir)))
                                                  (io/copy (utils/zip-str header-plus-blob)
-                                                          (io/file (str db-path "/objects/" blob-dir "/" name)))))
+                                                          (io/file (str db-path "/objects/" blob-dir "/" blob-file)))))
                                        (println address))
             :else (println "Error: that file isn't readable"))
 
