@@ -25,7 +25,6 @@
 (defn blob-bytes [file]
   (.getBytes (str "100644 " (.getName file) "\000")))
 
-
 (defn enter-blob [dir db file]
   (create-object (subs (.getPath file) (count dir)) dir db)
   (utils/concat-bytes (blob-bytes file) (blob-addr-to-hex file)))
@@ -89,6 +88,6 @@
             :else (->> (io/file dir)
                        (build-tree (count (re-find (re-pattern "/") dir)) db dir)
                        anything?))
-      
+
       (catch Exception e
         e (println "Error: write-wtree accepts no arguments")))))

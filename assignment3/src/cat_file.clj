@@ -39,8 +39,7 @@
   [dir db n]
   (let [flag (first n)
         addr (last n)
-        db-path (str dir "/" db)
-        obj-path (utils/obj-path dir db addr)]
+        db-path (str dir "/" db)]
     (try
       (if (and (not= flag "-h") (not= flag "--help") (not= flag "-p") (not= flag "-t") (= (first flag) "-"))
         (throw (Exception.)) ())
@@ -58,7 +57,7 @@
             (not (.exists (io/file db-path))) (println "Error: could not find database. (Did you run `idiot init`?)")
             (not (or (= flag "-p") (= flag "-t"))) (println "Error: the -p or -t switch is required")
             (and (or (= flag "-p") (= flag "-t")) (= flag addr)) (throw (Exception.))
-            (not (.exists (io/file obj-path))) (println "Error: that address doesn't exist")
+            (not (.exists (io/file (utils/obj-path dir db addr)))) (println "Error: that address doesn't exist")
             (= flag "-t") (println (handle-t dir db addr))
             :else (let [type (handle-t dir db addr)]
                     (cond (= type "blob") (print (read-blob dir db addr))
@@ -66,4 +65,4 @@
                           :else (print (read-blob dir db addr)))))
 
       (catch Exception e
-        (println e) (println "Error: you must specify an address")))))
+        e (println "Error: you must specify an address")))))
