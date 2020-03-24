@@ -1,20 +1,38 @@
 (ns cat_file
-  (:require [clojure.java.io :as io])
+  (:require [clojure.java.io :as io]
+            [clojure.string :as string])
   (:require [utils]))
 
 (defn handle-t
   "read contents of objects to determine their type"
-  [obj-path]
-  (let [obj (slurp (utils/unzip obj-path))
+  [dir db addr]
+  (let [obj-path (utils/obj-path dir db addr)
+        obj (slurp (utils/unzip obj-path))
         type-end (.indexOf obj " ")]
     (subs obj 0 type-end)))
 
 (defn read-blob
   "read the contents of a blob object"
-  [obj-path]
-  (let [blob (slurp (utils/unzip obj-path))
-        blob-start (.indexOf blob "\000")]
-    (subs blob (+ blob-start 1))))
+  [dir db addr]
+  (let [obj-path (utils/obj-path dir db addr)
+        blob (slurp (utils/unzip obj-path))]
+    (second (string/split blob #"\000"))))
+
+(defn read-tree-bytes
+  "parse single line of a tree's content"
+  [dir db content-bytes]
+  (when (> (count content-bytes) 0)
+    (let [addr (->> content-bytes (utils/split-at-byte 0) second (utils/split-at-byte 0) first (take 20) utils/to-hex-string)
+          type-and-name (string/split (->> content-bytes (utils/split-at-byte 0) first utils/bytes->str) #" ")
+          rest-bytes (->> content-bytes (utils/split-at-byte 0) second (drop 20) byte-array)]
+      (str (first type-and-name) " " (handle-t dir db addr) " " addr "\t" (second type-and-name) "\n" (read-tree-bytes dir db rest-bytes)))))
+
+(defn read-tree
+  "read the contents of a tree object"
+  [dir db addr]
+  (let [obj-path (utils/obj-path dir db addr)
+        content-bytes (->> obj-path utils/unzip (utils/split-at-byte 0) second)]
+    (string/replace (->> content-bytes (read-tree-bytes dir db) string/trim) #"40000" "040000")))
 
 (defn main
   "print information about an object"
@@ -22,7 +40,7 @@
   (let [flag (first n)
         addr (last n)
         db-path (str dir "/" db)
-        obj-path (str db-path "/objects/" (subs addr 0 2) "/" (subs addr 2))]
+        obj-path (utils/obj-path dir db addr)]
     (try
       (if (and (not= flag "-h") (not= flag "--help") (not= flag "-p") (not= flag "-t") (= (first flag) "-"))
         (throw (Exception.)) ())
@@ -41,11 +59,11 @@
             (not (or (= flag "-p") (= flag "-t"))) (println "Error: the -p or -t switch is required")
             (and (or (= flag "-p") (= flag "-t")) (= flag addr)) (throw (Exception.))
             (not (.exists (io/file obj-path))) (println "Error: that address doesn't exist")
-            (= flag "-t") (println (handle-t obj-path))
-            :else (let [type (handle-t obj-path)]
-                    (cond (= type "blob") (print (read-blob obj-path))
-                          (= type "tree") (println (str "read tree " addr))
-                          :else (println (str "read commit " addr)))))
+            (= flag "-t") (println (handle-t dir db addr))
+            :else (let [type (handle-t dir db addr)]
+                    (cond (= type "blob") (print (read-blob dir db addr))
+                          (= type "tree") (println (read-tree dir db addr))
+                          :else (print (read-blob dir db addr)))))
 
       (catch Exception e
         (println e) (println "Error: you must specify an address")))))
