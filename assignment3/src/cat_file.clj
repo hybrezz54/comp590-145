@@ -19,7 +19,7 @@
     (second (string/split blob #"\000"))))
 
 (defn read-tree-bytes
-  "parse single line of a tree's content"
+  "parse tree's content line by line"
   [dir db content-bytes]
   (when (> (count content-bytes) 0)
     (let [addr (->> content-bytes (utils/split-at-byte 0) second (utils/split-at-byte 0) first (take 20) utils/to-hex-string)
