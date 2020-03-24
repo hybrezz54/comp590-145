@@ -2,22 +2,17 @@
   (:require [clojure.java.io :as io])
   (:require [utils]))
 
-(defn unzip-obj
-  "uncompressed object stored in database"
-  [obj-path]
-  (with-open [input (-> obj-path io/file io/input-stream)] (utils/unzip input)))
-
 (defn handle-t
   "read contents of objects to determine their type"
   [obj-path]
-  (let [obj (unzip-obj obj-path)
+  (let [obj (slurp (utils/unzip obj-path))
         type-end (.indexOf obj " ")]
     (subs obj 0 type-end)))
 
 (defn read-blob
   "read the contents of a blob object"
   [obj-path]
-  (let [blob (unzip-obj obj-path)
+  (let [blob (slurp (utils/unzip obj-path))
         blob-start (.indexOf blob "\000")]
     (subs blob (+ blob-start 1))))
 
@@ -53,4 +48,4 @@
                           :else (println (str "read commit " addr)))))
 
       (catch Exception e
-        e (println "Error: you must specify an address")))))
+        (println e) (println "Error: you must specify an address")))))

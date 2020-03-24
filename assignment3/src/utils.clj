@@ -34,15 +34,13 @@
     (ByteArrayInputStream. (.toByteArray out))))
 
 (defn unzip
-  "Unzip the given data with zlib. Pass an opened input stream as the arg. The
-  caller should close the stream afterwards."
-  [input-stream]
-  (with-open [unzipper (InflaterInputStream. input-stream)
+  "Unzip the given file's contents with zlib."
+  [path]
+  (with-open [input (-> path io/file io/input-stream)
+              unzipper (InflaterInputStream. input)
               out (ByteArrayOutputStream.)]
     (io/copy unzipper out)
-    (->> (.toByteArray out)
-         (map char)
-         (apply str))))
+    (.toByteArray out)))
 
 (defn sha-bytes [bytes]
   (.digest (MessageDigest/getInstance "sha1") bytes))
