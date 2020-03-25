@@ -17,10 +17,6 @@
 ;; (defn files-per-level [level sorted]
 ;;   (filter #(= level (+ (count (re-seq #"\\" (.getPath %))) (count (re-seq #"/" (.getPath %))))) sorted))
 
-(defn anything? [%]
-  (cond (nil? %) (println "The directory was empty, so nothing was saved.")
-        :else (println %)))
-
 (defn create-object [dir db addr contents]
   (let [path (utils/obj-path dir db addr)]
     (cond (not (.exists (io/file path))) (do (io/make-parents path)
@@ -43,17 +39,18 @@
 
 (defn create-tree [dir db contents]
   (let [filtered-contents (filter #(not (nil? %)) contents)
-        levels (entries? filtered-contents)
+        entries (entries? filtered-contents)
         content-bytes (apply concat filtered-contents)
-        tree-bytes (-> (str "tree " levels "\000") .getBytes (concat content-bytes) byte-array)
+        tree-bytes (-> (str "tree " entries "\000") .getBytes (concat content-bytes) byte-array)
         addr (-> tree-bytes utils/sha-bytes utils/to-hex-string)]
-    (cond (= (count filtered-contents) 0) nil
-          :else (create-object dir db addr tree-bytes))))
+    (cond (= (count filtered-contents) 0) (println "The directory was empty, so nothing was saved.")
+          :else (create-object dir db addr tree-bytes))
+    addr))
 
 (defn build-tree [dir db current]
   (let [files (.listFiles current)
-        ;; filesOnLevel (files-per-level level files)
-        contents (for [file files]
+        sorted-files (sort-by #(.getName %) files)
+        contents (for [file sorted-files]
                    (if (.isDirectory file)
                      (when (not= (.getName file) db)
                        (enter-tree (.getName file) (build-tree dir db file)))
@@ -77,9 +74,7 @@
                 (println "Arguments:")
                 (println "   -h       print this message"))
             (not (.exists (io/file db-path))) (println "Error: could not find database. (Did you run `idiot init`?)")
-            :else (->> (io/file dir)
-                       (build-tree dir db)
-                       anything?))
+            :else (println (build-tree dir db (io/file dir))))
 
       (catch Exception e
         (println e) (println "Error: write-wtree accepts no arguments")))))
