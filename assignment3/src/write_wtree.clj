@@ -14,9 +14,6 @@
 (defn entries? [files]
   (reduce + 0 (map count files)))
 
-;; (defn files-per-level [level sorted]
-;;   (filter #(= level (+ (count (re-seq #"\\" (.getPath %))) (count (re-seq #"/" (.getPath %))))) sorted))
-
 (defn create-object [dir db addr contents]
   (let [path (utils/obj-path dir db addr)]
     (cond (not (.exists (io/file path))) (do (io/make-parents path)
@@ -43,9 +40,9 @@
         content-bytes (apply concat filtered-contents)
         tree-bytes (-> (str "tree " entries "\000") .getBytes (concat content-bytes) byte-array)
         addr (-> tree-bytes utils/sha-bytes utils/to-hex-string)]
-    (cond (= (count filtered-contents) 0) (println "The directory was empty, so nothing was saved.")
-          :else (create-object dir db addr tree-bytes))
-    addr))
+    (cond (= (count filtered-contents) 0) (str "The directory was empty, so nothing was saved.")
+          :else (do (create-object dir db addr tree-bytes)
+                    addr))))
 
 (defn build-tree [dir db current]
   (let [files (.listFiles current)
@@ -77,4 +74,4 @@
             :else (println (build-tree dir db (io/file dir))))
 
       (catch Exception e
-        (println e) (println "Error: write-wtree accepts no arguments")))))
+        e (println "Error: write-wtree accepts no arguments")))))
