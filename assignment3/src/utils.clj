@@ -81,29 +81,5 @@
         part2 (nthrest bytes (-> part1 count inc))]
     [part1 part2]))
 
-(defn string
-  "Return the sha1 sum of the data as a 40-character string."
-  [data]
-  (-> data bytes to-hex-string))
-
-(defn path-maker
-  [dir db addy]
-  (str dir db "/objects/" (subs addy 0 2) "/" (subs addy 2)))
-
-;; (defn blo-stor
-;;   [file dir db]
-;;   (let [bNh (str "blob " (count (slurp file)) "\000" (slurp file))
-;;         addy (sha1-sum bNh)
-;;         path (path-maker dir db addy)]
-;;     (cond (not (.exists (io/as-file path)))
-;;           (do (io/make-parents path)
-;;               (io/copy (zip-str bNh) (io/file path))))))
-
-(defn concat-bytes
-  "Concatenate multiple items into a byte array."
-  [& byte-arrays]
-  (byte-array
-   (mapcat cast byte-arrays)))
-
 (defn obj-path [dir db addr]
   (str dir "/" db "/objects/" (subs addr 0 2) "/" (subs addr 2)))
