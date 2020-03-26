@@ -42,8 +42,7 @@
             flag (first pair)
             addr (second pair)]
         (if (= flag "-p")
-          (cond (or (nil? addr) (= flag addr)) (str "Error: you must specify a commit object with the -p switch.")
-                (not (.exists (io/file (utils/obj-path dir db addr)))) (str "Error: no commit object exists at address " addr ".")
+          (cond (not (.exists (io/file (utils/obj-path dir db addr)))) (str "Error: no commit object exists at address " addr ".")
                 (not= (cat_file/get-type dir db addr) "commit") (str "Error: an object exists at address " addr ", but it isn't a commit.")
                 :else (recur (next parents-seq)))
           (str "Error: invalid command")))
@@ -73,6 +72,7 @@
             (not= (cf/get-type dir db addr) "tree") (println "Error: an object exists at that address, but it isn't a tree.")
             (not= msg-flag "-m") (println "Error: you must specify a message.")
             (nil? msg) (println "Error: you must specify a message with the -m switch.")
+            (odd? (count parents)) (println "Error: you must specify a commit object with the -p switch.")
             :else (if (not (nil? parents))
                     (let [results (check-parents dir db addr-flag-pairs)]
                       (if results
