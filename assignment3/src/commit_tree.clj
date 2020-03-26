@@ -35,19 +35,26 @@
 
 (defn check-parents
   "Check if valid parent commit addresses are given"
-  [dir db addrs]
-  (loop [addr-seq (seq addrs)]
-    (if addr-seq
-      (let [addr (first addr-seq)]
-        (cond (not (.exists (io/file (utils/obj-path dir db addr)))) (str "Error: no commit object exists at address " addr ".")
-              (not= (cat_file/get-type dir db addr) "commit") (str "Error: an object exists at address " addr ", but it isn't a commit.")
-              :else (recur (next addr-seq))))
+  [dir db parents]
+  (loop [parents-seq (seq parents)]
+    (if parents-seq
+      (let [pair (first parents-seq)
+            flag (first pair)
+            addr (second pair)]
+        (if (= flag "-p")
+          (cond (or (nil? addr) (= flag addr)) (str "Error: you must specify a commit object with the -p switch.")
+                (not (.exists (io/file (utils/obj-path dir db addr)))) (str "Error: no commit object exists at address " addr ".")
+                (not= (cat_file/get-type dir db addr) "commit") (str "Error: an object exists at address " addr ", but it isn't a commit.")
+                :else (recur (next parents-seq)))
+          (str "Error: invalid command")))
       nil)))
 
 (defn main
   "write a commit object based on the given tree"
   [dir db n]
-  (let [[addr msg-flag msg par-flag & par-addrs] n
+  (let [[addr msg-flag msg & parents] n
+        addr-flag-pairs (partition 2 parents)
+        addrs (map second addr-flag-pairs)
         db-path (str dir "/" db)]
     (try
       (cond (or (= addr "-h") (= addr "--help"))
@@ -66,12 +73,11 @@
             (not= (cf/get-type dir db addr) "tree") (println "Error: an object exists at that address, but it isn't a tree.")
             (not= msg-flag "-m") (println "Error: you must specify a message.")
             (nil? msg) (println "Error: you must specify a message with the -m switch.")
-            (and (= par-flag "-p") (nil? par-addrs)) (println "Error: you must specify a commit object with the -p switch.")
-            :else (if (and (= par-flag "-p") (not (nil? par-addrs)))
-                    (let [results (check-parents dir db par-addrs)]
+            :else (if (not (nil? parents))
+                    (let [results (check-parents dir db addr-flag-pairs)]
                       (if results
                         (println results)
-                        (println (->> par-addrs
+                        (println (->> addrs
                                       (map #(str "parent " % "\n"))
                                       (reduce str)
                                       (commit-object addr author committer msg)
