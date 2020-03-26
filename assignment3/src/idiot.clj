@@ -25,7 +25,7 @@
           (and (= cmd "hash-object") (< (count tasks) 3)) (hash_object/main dir db tasks)
           (and (= cmd "cat-file") (< (count tasks) 3)) (cat_file/main dir db tasks)
           (and (= cmd "write-wtree") (< (count tasks) 2)) (write_wtree/main dir db tasks)
-          (and (= cmd "commit-tree") (< (count tasks) 3)) (commit_tree/main dir db tasks)
+          (and (= cmd "commit-tree")) (commit_tree/main dir db tasks)
           :else (println "Error: invalid command"))))
 
 (defn -main [& args]

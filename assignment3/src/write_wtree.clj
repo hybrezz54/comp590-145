@@ -22,7 +22,6 @@
 
 (defn create-blob [dir db file]
   (let [header-plus-blob (str "blob " (count (slurp file)) "\000" (slurp file))
-        ;; addr (-> file bytes utils/to-hex-string)
         addr (utils/sha1-sum header-plus-blob)]
     (create-object dir db addr header-plus-blob)))
 
