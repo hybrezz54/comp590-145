@@ -4,7 +4,7 @@
   (:require [utils]))
 
 (defn get-type
-  "read contents of objects to determine their type"
+  "Read contents of objects to determine their type"
   [dir db addr]
   (let [obj-path (utils/obj-path dir db addr)
         obj (slurp (utils/unzip obj-path))
@@ -12,14 +12,14 @@
     (subs obj 0 type-end)))
 
 (defn read-blob
-  "read the contents of a blob object"
+  "Read the contents of a blob object"
   [dir db addr]
   (let [obj-path (utils/obj-path dir db addr)
         blob (slurp (utils/unzip obj-path))]
     (second (string/split blob #"\000"))))
 
 (defn read-tree-bytes
-  "parse tree's content line by line"
+  "Parse tree's content line by line"
   [dir db content-bytes]
   (when (> (count content-bytes) 0)
     (let [addr (->> content-bytes (utils/split-at-byte 0) second (utils/split-at-byte 0) first (take 20) utils/to-hex-string)
@@ -28,14 +28,14 @@
       (str (first type-and-name) " " (get-type dir db addr) " " addr "\t" (second type-and-name) "\n" (read-tree-bytes dir db rest-bytes)))))
 
 (defn read-tree
-  "read the contents of a tree object"
+  "Read the contents of a tree object"
   [dir db addr]
   (let [obj-path (utils/obj-path dir db addr)
         content-bytes (->> obj-path utils/unzip (utils/split-at-byte 0) second)]
     (string/replace (->> content-bytes (read-tree-bytes dir db) string/trim) #"40000" "040000")))
 
 (defn main
-  "print information about an object"
+  "Print information about an object"
   [dir db n]
   (let [flag (first n)
         addr (last n)
@@ -65,4 +65,4 @@
                           :else (print (read-blob dir db addr)))))
 
       (catch Exception e
-        e (println "Error: you must specify an address")))))
+        (println e) (println "Error: you must specify an address")))))

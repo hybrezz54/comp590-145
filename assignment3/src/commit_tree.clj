@@ -6,23 +6,17 @@
 (def author "Linus Torvalds <torvalds@transmeta.com> 1581997446 -0500")
 (def committer author)
 
-(defn create-object [dir db addr contents]
-  (let [path (utils/obj-path dir db addr)]
-    (cond (not (.exists (io/file path))) (do (io/make-parents path)
-                                             (io/copy (utils/zip-str contents)
-                                                      (io/file path))))))
-
 (defn commit-object
+  "Construct a new commit object"
   [tree-addr author-str committer-str msg parent-str]
-  (let [tree-str (utils/to-hex-string tree-addr)
-        commit-format (str "tree %s\n"
+  (let [commit-format (str "tree %s\n"
                            "%s"
                            "author %s\n"
                            "committer %s\n"
                            "\n"
                            "%s\n")
         commit-str (format commit-format
-                           tree-str
+                           tree-addr
                            parent-str
                            author-str
                            committer-str
@@ -31,16 +25,24 @@
             (count commit-str)
             commit-str)))
 
+(defn create-commit
+  "Create and store a commit object in the database"
+  [dir db commit]
+  (let [commit-bytes (-> commit .getBytes utils/sha-bytes)
+        addr (-> commit-bytes utils/to-hex-string)]
+    (utils/create-object dir db addr commit-bytes)
+    addr))
+
 (defn check-parents
   "Check if valid parent commit addresses are given"
   [dir db addrs]
   (loop [addr-seq (seq addrs)]
     (if addr-seq
       (let [addr (first addr-seq)]
-        (cond (not (.exists (io/file (utils/obj-path dir db addr)))) (println (str "Error: no commit object exists at address " addr "."))
-              (not= (cf/get-type dir db addr) "commit") (println (str "Error: an object exists at address " addr ", but it isn't a commit."))
+        (cond (not (.exists (io/file (utils/obj-path dir db addr)))) (str "Error: no commit object exists at address " addr ".")
+              (not= (cat_file/get-type dir db addr) "commit") (str "Error: an object exists at address " addr ", but it isn't a commit.")
               :else (recur (next addr-seq))))
-      ())))
+      (addrs))))
 
 (defn main
   "write a commit object based on the given tree"
@@ -65,9 +67,14 @@
             (not= msg-flag "-m") (println "Error: you must specify a message.")
             (nil? msg) (println "Error: you must specify a message with the -m switch.")
             (and (= par-flag "-p") (nil? par-addrs)) (println "Error: you must specify a commit object with the -p switch.")
-            :else (do (if (not (nil? par-addrs))
-                        (check-parents dir db par-addrs) ())
-                      (print "")))
+            :else (if (and (= par-flag "-p") (not (nil? par-addrs)))
+                    (println (->> (check-parents dir db par-addrs)
+                                  (map #(str "parent " % "\n"))
+                                  (reduce str)
+                                  (commit-object addr author committer msg)
+                                  (create-commit dir db)))
+                    (println (->> (commit-object addr author committer msg "")
+                                  (create-commit dir db)))))
 
       (catch Exception e
         e (println "Error: you must specify a tree address.")))))

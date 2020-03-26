@@ -81,5 +81,15 @@
         part2 (nthrest bytes (-> part1 count inc))]
     [part1 part2]))
 
-(defn obj-path [dir db addr]
+(defn obj-path
+  "Create a path string for an object given its address"
+  [dir db addr]
   (str dir "/" db "/objects/" (subs addr 0 2) "/" (subs addr 2)))
+
+(defn create-object
+  "Create and store new object in the database"
+  [dir db addr contents]
+  (let [path (obj-path dir db addr)]
+    (cond (not (.exists (io/file path))) (do (io/make-parents path)
+                                             (io/copy (utils/zip-str contents)
+                                                      (io/file path))))))
