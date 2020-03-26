@@ -6,10 +6,11 @@
 (defn get-type
   "Read contents of objects to determine their type"
   [dir db addr]
-  (let [obj-path (utils/obj-path dir db addr)
-        obj (slurp (utils/unzip obj-path))
-        type-end (.indexOf obj " ")]
-    (subs obj 0 type-end)))
+  (->> (utils/obj-path dir db addr)
+       utils/unzip
+       (utils/split-at-byte 32) ; byte 0x20
+       first
+       utils/bytes->str))
 
 (defn read-blob
   "Read the contents of a blob object"
@@ -34,6 +35,13 @@
         content-bytes (->> obj-path utils/unzip (utils/split-at-byte 0) second)]
     (string/replace (->> content-bytes (read-tree-bytes dir db) string/trim) #"40000" "040000")))
 
+(defn read-commit
+  "Read the contents of a commit object"
+  [dir db addr]
+  (let [obj-path (utils/obj-path dir db addr)
+        commit-bytes (->> obj-path utils/unzip (utils/split-at-byte 0) second)]
+    (->> commit-bytes utils/bytes->str)))
+
 (defn main
   "Print information about an object"
   [dir db n]
@@ -41,9 +49,6 @@
         addr (last n)
         db-path (str dir "/" db)]
     (try
-      (if (and (not= flag "-h") (not= flag "--help") (not= flag "-p") (not= flag "-t") (= (first flag) "-"))
-        (throw (Exception.)) ())
-
       (cond (or (= flag "-h") (= flag "--help"))
             (do (println "idiot cat-file: print information about an object")
                 (println)
@@ -60,9 +65,9 @@
             (not (.exists (io/file (utils/obj-path dir db addr)))) (println "Error: that address doesn't exist")
             (= flag "-t") (println (get-type dir db addr))
             :else (let [type (get-type dir db addr)]
-                    (cond (= type "blob") (print (read-blob dir db addr))
+                    (cond (= type "blob") (print (read-commit dir db addr))
                           (= type "tree") (println (read-tree dir db addr))
-                          :else (print (read-blob dir db addr)))))
+                          :else (print (read-commit dir db addr)))))
 
       (catch Exception e
         (println e) (println "Error: you must specify an address")))))
