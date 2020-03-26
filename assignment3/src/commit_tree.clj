@@ -30,7 +30,7 @@
   [dir db commit]
   (let [commit-bytes (-> commit .getBytes utils/sha-bytes)
         addr (-> commit-bytes utils/to-hex-string)]
-    (utils/create-object dir db addr commit-bytes)
+    (utils/create-object dir db addr commit)
     addr))
 
 (defn check-parents

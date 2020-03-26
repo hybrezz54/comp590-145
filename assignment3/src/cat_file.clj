@@ -65,9 +65,9 @@
             (not (.exists (io/file (utils/obj-path dir db addr)))) (println "Error: that address doesn't exist")
             (= flag "-t") (println (get-type dir db addr))
             :else (let [type (get-type dir db addr)]
-                    (cond (= type "blob") (print (read-commit dir db addr))
+                    (cond (= type "blob") (print (read-blob dir db addr))
                           (= type "tree") (println (read-tree dir db addr))
-                          :else (print (read-commit dir db addr)))))
+                          (= type "commit") (print (read-commit dir db addr)))))
 
       (catch Exception e
-        (println e) (println "Error: you must specify an address")))))
+        e (println "Error: you must specify an address")))))
