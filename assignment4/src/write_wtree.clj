@@ -34,8 +34,8 @@
 (defn enter-tree
   "Create an entry for a tree object in the tree"
   [name addr]
-  (cond (nil? addr) nil
-        :else (concat (.getBytes (str "40000 " name "\000")) (utils/from-hex-string addr))))
+  (when (not (nil? addr))
+    (concat (.getBytes (str "40000 " name "\000")) (utils/from-hex-string addr))))
 
 (defn create-tree
   "Create and store a tree object in the database"
@@ -45,9 +45,9 @@
         content-bytes (apply concat filtered-contents)
         tree-bytes (-> (str "tree " entries "\000") .getBytes (concat content-bytes) byte-array)
         addr (-> tree-bytes utils/sha-bytes utils/to-hex-string)]
-    (cond (= (count filtered-contents) 0) (str "The directory was empty, so nothing was saved.")
-          :else (do (utils/create-object dir db addr tree-bytes)
-                    addr))))
+    (when (not= (count filtered-contents) 0)
+      (utils/create-object dir db addr tree-bytes)
+      addr)))
 
 (defn build-tree
   "Build a tree object and its entries in the database recursively"
@@ -65,11 +65,11 @@
   "write the working tree to the database"
   [dir db n]
   (let [flag (first n)
-        db-path (str dir "/" db)]
+        db-path (str dir "/" db)
+        handle-empty #(if (nil? %)
+                        "The directory was empty, so nothing was saved."
+                        %)]
     (try
-      (if (and (not= flag nil) (not= flag "-h") (not= flag "--help"))
-        (throw (Exception.)) ())
-
       (cond (or (= flag "-h") (= flag "--help"))
             (do (println "idiot write-wtree: write the working tree to the database")
                 (println)
@@ -77,8 +77,12 @@
                 (println)
                 (println "Arguments:")
                 (println "   -h       print this message"))
+            (not (nil? flag)) (throw (Exception.))
             (not (.exists (io/file db-path))) (println "Error: could not find database. (Did you run `idiot init`?)")
-            :else (println (build-tree dir db (io/file dir))))
+            :else (println (->> dir
+                                io/file
+                                (build-tree dir db)
+                                handle-empty)))
 
       (catch Exception e
         e (println "Error: write-wtree accepts no arguments")))))
