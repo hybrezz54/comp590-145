@@ -81,4 +81,4 @@
             :else (println (build-tree dir db (io/file dir))))
 
       (catch Exception e
-        (println e) (println "Error: write-wtree accepts no arguments")))))
+        e (println "Error: write-wtree accepts no arguments")))))

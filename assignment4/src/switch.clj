@@ -22,8 +22,9 @@
             (or (and (not= flag "-c") (> (count n) 1)) (and (= flag "-c") (> (count n) 2))) (println "Error: you may only specify one branch name.")
             (not (.exists (io/file db-path))) (println "Error: could not find database. (Did you run `idiot init`?)")
             (and (= flag "-c") (.exists (io/file ref-path))) (println "Error: a ref with that name already exists.")
-            (not (.exists (io/file ref-path))) (println "Error: no ref with that name exists.")
-            (= flag "-c") (do (spit ref-path (rp/find-commit db dir))
+            (and (not= flag "-c") (not (.exists (io/file ref-path)))) (println "Error: no ref with that name exists.")
+            (= flag "-c") (do (let [addr (rp/find-commit dir db)]
+                                (when (not (nil? addr)) (spit ref-path addr)))
                               (spit head-path (format "ref: refs/heads/%s\n" branch))
                               (println (format "Switched to a new branch '%s'" branch)))
             :else (do (spit head-path (format "ref: refs/heads/%s\n" flag))

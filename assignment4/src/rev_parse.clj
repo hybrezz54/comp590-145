@@ -15,8 +15,10 @@
         head-path (str db-path "/" "HEAD")
         head (slurp head-path)]
     (if (is-head-ref? head)
-      (let [ref (-> head (str/split #" ") second str/trim-newline)]
-        (slurp (str db-path "/" ref))) ;; points to ref and assume ref is valid
+      (let [ref (-> head (str/split #" ") second str/trim-newline)
+            ref-path (str db-path "/" ref)]
+        (when (.exists (io/file ref-path))
+          (slurp ref-path))) ;; go to ref if exists
       head))) ;; commit object
 
 (defn main
