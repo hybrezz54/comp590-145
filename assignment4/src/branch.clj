@@ -13,8 +13,9 @@
   "list the names of all branches"
   [dir db]
   (let [db-path (str dir "/" db)
-        branches (->> db-path io/file .listFiles (sort-by #(.getName %)))
-        current (current-branch db dir)]
+        refs-path (str db-path "/refs/heads")
+        branches (->> refs-path io/file .listFiles (sort-by #(.getName %)))
+        current (current-branch dir db)]
     (doseq [branch branches] (let [name (.getName branch)]
                                (if (not= name current) (println (str "  " name))
                                    (println (str "* " name)))))))

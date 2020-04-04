@@ -2,13 +2,19 @@
   (:require [clojure.java.io :as io])
   (:require [clojure.string :as str]))
 
+(defn is-head-ref?
+  "Determines if HEAD points to a ref"
+  [head]
+  (-> head
+      (str/starts-with? "ref:")))
+
 (defn find-commit
   "Find the commit address that HEAD points to"
   [dir db]
   (let [db-path (str dir "/" db)
         head-path (str db-path "/" "HEAD")
         head (slurp head-path)]
-    (if (str/starts-with? head "ref:")
+    (if (is-head-ref? head)
       (let [ref (-> head (str/split #" ") second str/trim-newline)]
         (slurp (str db-path "/" ref))) ;; points to ref and assume ref is valid
       head))) ;; commit object

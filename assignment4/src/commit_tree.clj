@@ -1,52 +1,11 @@
 (ns commit_tree
   (:require [clojure.java.io :as io])
   (:require [utils]
+            [commit_utils :as cu]
             [cat_file :as cf]))
 
 (def author "Linus Torvalds <torvalds@transmeta.com> 1581997446 -0500")
 (def committer author)
-
-(defn commit-object
-  "Construct a new commit object"
-  [tree-addr author-str committer-str msg parent-str]
-  (let [commit-format (str "tree %s\n"
-                           "%s"
-                           "author %s\n"
-                           "committer %s\n"
-                           "\n"
-                           "%s\n")
-        commit-str (format commit-format
-                           tree-addr
-                           parent-str
-                           author-str
-                           committer-str
-                           msg)]
-    (format "commit %d\000%s"
-            (count commit-str)
-            commit-str)))
-
-(defn create-commit
-  "Create and store a commit object in the database"
-  [dir db commit]
-  (let [commit-bytes (-> commit .getBytes utils/sha-bytes)
-        addr (-> commit-bytes utils/to-hex-string)]
-    (utils/create-object dir db addr commit)
-    addr))
-
-(defn check-parents
-  "Check if valid parent commit addresses are given"
-  [dir db parents]
-  (loop [parents-seq (seq parents)]
-    (if parents-seq
-      (let [pair (first parents-seq)
-            flag (first pair)
-            addr (second pair)]
-        (if (= flag "-p")
-          (cond (not (.exists (io/file (utils/obj-path dir db addr)))) (str "Error: no commit object exists at address " addr ".")
-                (not= (cf/get-type dir db addr) "commit") (str "Error: an object exists at address " addr ", but it isn't a commit.")
-                :else (recur (next parents-seq)))
-          (str "Error: invalid command")))
-      nil)))
 
 (defn main
   "write a commit object based on the given tree"
@@ -74,16 +33,16 @@
             (nil? msg) (println "Error: you must specify a message with the -m switch.")
             (odd? (count parents)) (println "Error: you must specify a commit object with the -p switch.")
             :else (if (not (nil? parents))
-                    (let [results (check-parents dir db addr-flag-pairs)]
+                    (let [results (cu/check-parents dir db addr-flag-pairs)]
                       (if results
                         (println results)
                         (println (->> addrs
                                       (map #(str "parent " % "\n"))
                                       (reduce str)
-                                      (commit-object addr author committer msg)
-                                      (create-commit dir db)))))
-                    (println (->> (commit-object addr author committer msg "")
-                                  (create-commit dir db)))))
+                                      (cu/commit-object addr author committer msg)
+                                      (cu/create-commit dir db)))))
+                    (println (->> (cu/commit-object addr author committer msg "")
+                                  (cu/create-commit dir db)))))
 
       (catch Exception e
         e (println "Error: you must specify a tree address.")))))
